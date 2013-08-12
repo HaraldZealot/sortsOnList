@@ -8,9 +8,9 @@ int main(string[] args)
 {
     Random generator;
     auto fout = File("array.txt","w");
-    for(auto i=0; i<64/+_000+/; ++i)
+    for(auto i=0; i<64_000; ++i)
     {
-        int n = generator.front%20;
+        int n = generator.front%100_000;
         fout.writefln("%d",n);
         generator.popFront();
     }
@@ -75,7 +75,7 @@ int main(string[] args)
     }
     fin2.close;
 
-    list.print();
+    //list.print();
     tic = Clock.currSystemTick;
     sortByTimsort(list);
     toc = Clock.currSystemTick;
@@ -83,7 +83,7 @@ int main(string[] args)
     writeln("unsorted timsort");
     writeln(duration.usecs/1000_000,"  sec ",(duration.usecs%1000_000)/1000," msec ",duration.usecs%1000," usec");
 
-    list.print();
+    //list.print();
     tic = Clock.currSystemTick;
     sortByTimsort(list);
     toc = Clock.currSystemTick;

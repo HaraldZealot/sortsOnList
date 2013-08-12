@@ -192,13 +192,13 @@ class List(Type)
                 p=p.right;
             }
             writeln();
-           /* p=end;
-            while(p)
-            {
-                write(p.datum," ");
-                p=p.left;
-            }
-            writeln();*/
+            /* p=end;
+             while(p)
+             {
+                 write(p.datum," ");
+                 p=p.left;
+             }
+             writeln();*/
         }
     }
 
@@ -355,13 +355,15 @@ void sortByTimsort(Type)(List!Type list)
     }
 
     uint minrun = lengthMinrun(list.size);
+    writeln("minrun = ", minrun);
     List!Type[] stack=new List!Type[list.size/minrun+1];
     int top = 0;
 
     // split on run
+    List!Type run;
     while(!list.isEmpty)
     {
-        List!Type run;
+        run = new List!Type;
         if(list.size>1)
         {
             Node!Type*  q = list.beg.right;
@@ -391,7 +393,7 @@ void sortByTimsort(Type)(List!Type list)
         else
         {
             run = list;
-            list = null;
+            //list = null;
         }
 
         if(!list.isEmpty && run.size<minrun)
@@ -411,16 +413,27 @@ void sortByTimsort(Type)(List!Type list)
             apendix = null;
         }
 
+
         stack[top++]=run;
+        writeln("top = ",top);
+        writefln("run =%d",run.size);
         run = null;
 
         // merging
+
+
+
 
         bool a,b;
         while(top>=3
                 && ((stack[top-3].size <= stack[top-2].size+stack[top-1].size)
                     || (stack[top-2].size <= stack[top-1].size)))
         {
+            writeln("top = ", top);
+            writeln("stack:");
+            for(int i=0; i<top; ++i)
+                writef("%3d", stack[i].size);
+            writeln();
             if(stack[top-3].size <= stack[top-2].size+stack[top-1].size)
             {
                 if(stack[top-3].size<stack[top-1].size)
@@ -444,8 +457,18 @@ void sortByTimsort(Type)(List!Type list)
                 --top;
             }
         }
+        writeln("top = ", top);
+        writeln("stack:");
+        for(int i=0; i<top; ++i)
+            writef("%3d", stack[i].size);
+        writeln();
     }
-    while(top >= 1)
+    writeln("top = ", top);
+    writeln("stack:");
+    for(int i=0; i<top; ++i)
+        writef("%3d", stack[i].size);
+    writeln();
+    while(top >= 2)
     {
         merge(stack[top - 2],stack[top - 1]);
         stack[top - 1] = null;
