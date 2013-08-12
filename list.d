@@ -1,3 +1,5 @@
+import std.stdio;
+
 class ListException: Exception
 {
     this()
@@ -155,24 +157,55 @@ class List(Type)
         --size;
     }
 
-    @property Type onBack()
+    @property Type onBack() const
     {
         if(!isEmpty)
             return end.datum;
         else throw new ListException;
     }
 
-    @property Type onFront()
+    @property Type onFront() const
     {
         if(!isEmpty)
             return beg.datum;
         else throw new ListException;
     }
 
-    @property bool isEmpty() nothrow
+    @property bool isEmpty() const nothrow
     {
         return !beg && !end;
     }
+
+    void print() /+nothrow+/
+    {
+        writeln("list:");
+        if(this.isEmpty)
+        {
+            writeln("empty");
+        }
+        else
+        {
+            Node!Type* p=beg;
+            while(p)
+            {
+                write(p.datum," ");
+                p=p.right;
+            }
+            writeln();
+           /* p=end;
+            while(p)
+            {
+                write(p.datum," ");
+                p=p.left;
+            }
+            writeln();*/
+        }
+    }
+
+    /* private ref List!Type cutSubList(Node!Type* p, Node!Type* q)
+     {
+
+     }*/
 }
 
 void sortByInsertion(Type)(List!Type list)
@@ -180,7 +213,7 @@ void sortByInsertion(Type)(List!Type list)
     if(!list.isEmpty)
     {
         Node!Type* prebeg=new Node!Type(Type.init),
-            postend= new Node!Type(Type.init);
+        postend= new Node!Type(Type.init);
         prebeg.right=list.beg;
         list.beg.left=prebeg;
         postend.left=list.end;
@@ -225,14 +258,28 @@ void sortByMerge(Type)(List!Type list)
         if(part.size>1)
             sortByMerge(part);
         merge(list,part);
+        part = null;
     }
+}
+
+private void connect(Type)(List!Type list, List!Type part)
+{
+    list.end.right = part.beg;
+    part.beg.left = list.end;
+    list.size += part.size;
+    list.end = part.end;
+    part.beg = null;
+    part.end = null;
+    part.size = 0;
 }
 
 private void split(Type)(List!Type list, List!Type part)
 {
+    //list.print();
     bool direction=false;
     Node!Type* p=list.beg, q=list.end;
     int pSize=1,qSize=1;
+    // writeln("p ",p.datum," q ",q.datum);
     while(p.right!=q)
     {
         if(direction)
@@ -245,8 +292,11 @@ private void split(Type)(List!Type list, List!Type part)
             q=q.left;
             ++qSize;
         }
+        //  writeln("p ",p.datum," q ",q.datum);
         direction=!direction;
     }
+    //writeln("list ",list.size);
+    // writeln("p+q ",pSize+qSize);
     assert(list.size == pSize+qSize);
     part.beg=q;
     part.end=list.end;
@@ -281,20 +331,168 @@ private void merge(Type)(List!Type list, List!Type part)
     }
     if(!temp.isEmpty)
     {
-        list.end.right=temp.beg;
-        temp.beg.left=list.end;
-        list.size+=temp.size;
-        temp.beg=null;
-        temp.end=null;
-        temp.size=0;
+        connect(list,temp);
     }
     if(!part.isEmpty)
     {
-        list.end.right=part.beg;
-        part.beg.left=list.end;
-        list.size+=part.size;
-        part.beg=null;
-        part.end=null;
-        part.size=0;
+        connect(list,part);
+    }
+    temp = null;
+}
+
+void sortByTimsort(Type)(List!Type list)
+{
+    immutable uint minrunTreshold=64;
+    uint lengthMinrun(uint size)
+    {
+        uint flag = 0;
+        while(size>=minrunTreshold)
+        {
+            flag |= size & 1;
+            size >>= 1;
+        }
+        return size+flag;
+    }
+
+    uint minrun = lengthMinrun(list.size);
+    List!Type[] stack=new List!Type[list.size/minrun+1];
+    int top = 0;
+
+    // split on run
+    while(!list.isEmpty)
+    {
+        List!Type run;
+        if(list.size>1)
+        {
+            Node!Type*  q = list.beg.right;
+            uint size = 2;
+            if(list.beg.datum<=q.datum)
+            {
+                // non descdending order
+                while(q!=list.end && q.datum<=q.right.datum)
+                {
+                    q=q.right;
+                    ++size;
+                }
+                beisen(run,q,size,list);
+            }
+            else
+            {
+                // descending oreder
+                while(q!=list.end && q.datum > q.right.datum)
+                {
+                    q=q.right;
+                    ++size;
+                }
+                beisen(run,q,size,list);
+                reverse(run);
+            }
+        }
+        else
+        {
+            run = list;
+            list = null;
+        }
+
+        if(!list.isEmpty && run.size<minrun)
+        {
+            List!Type apendix = new List!Type;
+            Node!Type* q=list.beg;
+            uint apendixSize =minrun-run.size;
+            uint size = 1;
+            for(int i=0; q!=list.end && i<apendixSize; ++i)
+            {
+                q=q.right;
+                ++size;
+            }
+            beisen(apendix,q,size,list);
+            connect(run,apendix);
+            sortByInsertion(run);
+            apendix = null;
+        }
+
+        stack[top++]=run;
+        run = null;
+
+        // merging
+
+        bool a,b;
+        while(top>=3
+                && ((stack[top-3].size <= stack[top-2].size+stack[top-1].size)
+                    || (stack[top-2].size <= stack[top-1].size)))
+        {
+            if(stack[top-3].size <= stack[top-2].size+stack[top-1].size)
+            {
+                if(stack[top-3].size<stack[top-1].size)
+                {
+                    merge(stack[top - 3],stack[top - 2]);
+                    stack[top - 2] = stack[top - 1];
+                    stack[top - 1] = null;
+                    --top;
+                }
+                else
+                {
+                    merge(stack[top - 2],stack[top - 1]);
+                    stack[top - 1] = null;
+                    --top;
+                }
+            }
+            else if(stack[top-2].size <= stack[top-1].size)
+            {
+                merge(stack[top - 2],stack[top - 1]);
+                stack[top - 1] = null;
+                --top;
+            }
+        }
+    }
+    while(top >= 1)
+    {
+        merge(stack[top - 2],stack[top - 1]);
+        stack[top - 1] = null;
+        --top;
+    }
+
+    list.beg = stack[top - 1].beg;
+    list.end = stack[top - 1].end;
+    list.size = stack[top - 1].size;
+    stack[top - 1] = null;
+    --top;
+}
+
+
+
+
+
+
+private void beisen(Type)(List!Type run, Node!Type* q, uint size, List!Type list) nothrow
+{
+    run.beg = list.beg;
+    run.end = q;
+    run.size = size;
+    list.beg = q.right;
+    list.size -= size;
+    q.right = null;
+    if(list.beg)
+    {
+        list.beg.left = null;
+    }
+    else
+    {
+        list.end = null;
+    }
+}
+
+private void reverse(Type)(List!Type list) nothrow
+{
+    if(!list.isEmpty)
+    {
+        List!Type temp = new List!Type;
+        while(!list.isEmpty)
+        {
+            temp.pushBack(list.popNodeBack());
+        }
+        list.beg=temp.beg;
+        list.end=temp.end;
+        temp=null;
     }
 }
