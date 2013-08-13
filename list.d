@@ -1,4 +1,15 @@
-import std.stdio;
+import std.stdio,std.format,std.conv;
+
+private File fdebug;
+static this()
+{
+    fdebug.open("debug.txt","w");
+}
+
+static ~this()
+{
+    fdebug.close();
+}
 
 class ListException: Exception
 {
@@ -145,6 +156,7 @@ class List(Type)
     {
         while(!isEmpty)
             deleteForward();
+        size = 0;
     }
 
     private void deleteForward() nothrow
@@ -176,22 +188,55 @@ class List(Type)
         return !beg && !end;
     }
 
-    void print() /+nothrow+/
+    void verify()
     {
-        writeln("list:");
-        if(this.isEmpty)
+        if(!isEmpty)
         {
-            writeln("empty");
+            Node!Type* p;
+            p=beg;
+            while(p!=end)
+            {
+                assert(p !is null);
+                p=p.right;
+            }
+            assert(p !is null);
+            p=p.right;
+            assert(p is null);
+
+            p=end;
+            while(p!=beg)
+            {
+                assert(p !is null);
+                p=p.left;
+            }
+            assert(p !is null);
+            p=p.left;
+            assert(p is null);
         }
         else
         {
+            assert(size==0);
+        }
+    }
+
+    void print(string fileName) /+nothrow+/
+    {
+
+        //f.writeln("list:");
+        if(this.isEmpty)
+        {
+            // f.writeln("");
+        }
+        else
+        {
+            auto f= File(fileName,"w");
             Node!Type* p=beg;
-            while(p)
+            //while(p!=end)
+            for(auto i=0; i<size; ++i)
             {
-                write(p.datum," ");
+                f.writeln(p.datum.toString());
                 p=p.right;
             }
-            writeln();
             /* p=end;
              while(p)
              {
@@ -199,8 +244,83 @@ class List(Type)
                  p=p.left;
              }
              writeln();*/
+            f.close();
+        }
+
+    }
+
+    void swap(int i,int j)
+    {
+        if(!isEmpty && i>=0 && i<size && j>=0 && j<=size)
+        {
+            Node!Type* p=beg, q=beg;
+            for(int ii=0; ii<i; ++ii, p=p.right) {}
+            for(int jj=0; jj<j; ++jj, q=q.right) {}
+            if(p.datum != q.datum && i != j)
+            {
+
+                Node!Type* prebeg=new Node!Type(Type.init),
+                postend= new Node!Type(Type.init);
+                prebeg.right=beg;
+                beg.left=prebeg;
+                postend.left=end;
+                end.right=postend;
+                if(p.right!=q && q.right!=p)
+                {
+
+
+                    Node!Type* pLeft=p.left;
+                    Node!Type* pRight=p.right;
+                    Node!Type* qLeft=q.left;
+                    Node!Type* qRight=q.right;
+
+
+                    q.left=pLeft;
+                    q.right=pRight;
+                    pLeft.right=q;
+                    pRight.left=q;
+
+                    p.left=qLeft;
+                    p.right=qRight;
+                    qLeft.right=p;
+                    qRight.left=p;
+
+                    assert(q.left.right==q);
+                    assert(q.right.left==q);
+                    assert(p.left.right==p);
+                    assert(p.right.left==p);
+                }
+                else
+                {
+                    if(q.right==p)
+                    {
+                        auto t=p;
+                        p=q;
+                        q=t;
+                    }
+
+                    Node!Type* pLeft=p.left;
+                    Node!Type* qRight=q.right;
+
+                    q.left = pLeft;
+                    p.right = qRight;
+                    q.right = p;
+                    p.left = q;
+
+                }
+
+                beg = prebeg.right;
+                beg.left = null;
+
+                end = postend.left;
+                end.right = null;
+
+                prebeg = null;
+                postend = null;
+            }
         }
     }
+
 
     /* private ref List!Type cutSubList(Node!Type* p, Node!Type* q)
      {
@@ -264,13 +384,25 @@ void sortByMerge(Type)(List!Type list)
 
 private void connect(Type)(List!Type list, List!Type part)
 {
-    list.end.right = part.beg;
-    part.beg.left = list.end;
-    list.size += part.size;
-    list.end = part.end;
-    part.beg = null;
-    part.end = null;
-    part.size = 0;
+    if(!part.isEmpty)
+    {
+        if(!list.isEmpty)
+        {
+            list.end.right = part.beg;
+            part.beg.left = list.end;
+            list.size += part.size;
+            list.end = part.end;
+        }
+        else
+        {
+            list.beg=part.beg;
+            list.end=part.end;
+            list.size=part.size;
+        }
+        part.beg = null;
+        part.end = null;
+        part.size = 0;
+    }
 }
 
 private void split(Type)(List!Type list, List!Type part)
@@ -343,6 +475,7 @@ private void merge(Type)(List!Type list, List!Type part)
 void sortByTimsort(Type)(List!Type list)
 {
     immutable uint minrunTreshold=64;
+
     uint lengthMinrun(uint size)
     {
         uint flag = 0;
@@ -355,7 +488,7 @@ void sortByTimsort(Type)(List!Type list)
     }
 
     uint minrun = lengthMinrun(list.size);
-    writeln("minrun = ", minrun);
+    fdebug.writeln("minrun = ", minrun);
     List!Type[] stack=new List!Type[list.size/minrun+1];
     int top = 0;
 
@@ -415,8 +548,8 @@ void sortByTimsort(Type)(List!Type list)
 
 
         stack[top++]=run;
-        writeln("top = ",top);
-        writefln("run =%d",run.size);
+        fdebug.writeln("top = ",top);
+        fdebug.writefln("run =%d",run.size);
         run = null;
 
         // merging
@@ -428,11 +561,11 @@ void sortByTimsort(Type)(List!Type list)
         while((top>=3 && (stack[top-3].size <= stack[top-2].size+stack[top-1].size))
                 || (top>=2 && (stack[top-2].size <= stack[top-1].size)))
         {
-            /*writeln("top = ", top);
-            writeln("stack:");
+            fdebug.writeln("top = ", top);
+            fdebug.writeln("stack:");
             for(int i=0; i<top; ++i)
-                writef("%3d ", stack[i].size);
-            writeln();*/
+                fdebug.writef("%5d ", stack[i].size);
+            fdebug.writeln();
             if(top>=3 && (stack[top-3].size <= stack[top-2].size+stack[top-1].size))
             {
                 if(stack[top-3].size<=stack[top-1].size)
@@ -456,17 +589,17 @@ void sortByTimsort(Type)(List!Type list)
                 --top;
             }
         }
-        /*writeln("top = ", top);
-        writeln("stack:");
+        fdebug.writeln("top = ", top);
+        fdebug.writeln("stack:");
         for(int i=0; i<top; ++i)
-            writef("%3d ", stack[i].size);
-        writeln();*/
+            fdebug.writef("%3d ", stack[i].size);
+        fdebug.writeln();
     }
-    /*writeln("top = ", top);
-    writeln("stack:");
+    fdebug.writeln("top = ", top);
+    fdebug.writeln("stack:");
     for(int i=0; i<top; ++i)
-        writef("%3d ", stack[i].size);
-    writeln();*/
+        fdebug.writef("%3d ", stack[i].size);
+    fdebug.writeln();
     while(top >= 2)
     {
         merge(stack[top - 2],stack[top - 1]);
@@ -516,5 +649,50 @@ private void reverse(Type)(List!Type list)
         list.beg=temp.beg;
         list.end=temp.end;
         temp=null;
+    }
+}
+
+void sortByQuickDPP(Type)(List!Type list)
+{
+    if(!list.isEmpty)
+    {
+        Node!Type* p=list.beg, q=list.beg;
+        for(int mid=list.size/2, i=0; i<mid; ++i, p=p.right) {}
+
+        List!Type minor = new List!Type;
+        List!Type major = new List!Type;
+        List!Type media = new List!Type;
+
+        Type val = p.datum;
+        while(q)
+        {
+            if(q.datum<val)
+            {
+                minor.pushBack(list.popNodeFront());
+            }
+            else if(q.datum==val)
+            {
+                media.pushBack(list.popNodeFront());
+            }
+            else
+            {
+                major.pushBack(list.popNodeFront());
+            }
+            q=list.beg;
+        }
+        if(minor.size>1)sortByQuickDPP(minor);
+        if(major.size>1)sortByQuickDPP(major);
+        connect(minor,media);
+        connect(minor,major);
+        list.beg=minor.beg;
+        list.end=minor.end;
+        list.size=minor.size;
+
+        minor.beg =null;
+        minor.end =null;
+        minor.size =0;
+        minor =null;
+        media =null;
+        major =null;
     }
 }
