@@ -8,7 +8,7 @@ int main(string[] args)
 {
     Random generator;
     auto fout = File("array.txt","w");
-    for(auto i=0; i<64_000; ++i)
+    for(auto i=0; i<32_000; ++i)
     {
         int n = generator.front%100_000;
         fout.writefln("%d",n);
@@ -31,6 +31,12 @@ int main(string[] args)
     auto duration = toc - tic;
     writeln("unsorted insertion");
     writeln(duration.usecs/1000_000,"  sec ",(duration.usecs%1000_000)/1000," msec ",duration.usecs%1000," usec");
+    tic = Clock.currSystemTick;
+    sortByTimsort(list);
+    toc = Clock.currSystemTick;
+    duration = toc - tic;
+    writeln("sorted timsort");
+    writeln(duration.usecs/1000_000,"  sec ",(duration.usecs%1000_000)/1000," msec ",duration.usecs%1000," usec");
 
     tic = Clock.currSystemTick;
     sortByInsertion(list);
@@ -38,6 +44,7 @@ int main(string[] args)
     duration = toc - tic;
     writeln("sorted inserrtion");
     writeln(duration.usecs/1000_000,"  sec ",(duration.usecs%1000_000)/1000," msec ",duration.usecs%1000," usec");
+
 
     list.clear();
     auto fin1= File("array.txt","r");

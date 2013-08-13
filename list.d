@@ -359,7 +359,7 @@ void sortByTimsort(Type)(List!Type list)
     List!Type[] stack=new List!Type[list.size/minrun+1];
     int top = 0;
 
-    // split on run
+    //split on run
     List!Type run;
     while(!list.isEmpty)
     {
@@ -425,18 +425,17 @@ void sortByTimsort(Type)(List!Type list)
 
 
         bool a,b;
-        while(top>=3
-                && ((stack[top-3].size <= stack[top-2].size+stack[top-1].size)
-                    || (stack[top-2].size <= stack[top-1].size)))
+        while((top>=3 && (stack[top-3].size <= stack[top-2].size+stack[top-1].size))
+                || (top>=2 && (stack[top-2].size <= stack[top-1].size)))
         {
-            writeln("top = ", top);
+            /*writeln("top = ", top);
             writeln("stack:");
             for(int i=0; i<top; ++i)
-                writef("%3d", stack[i].size);
-            writeln();
-            if(stack[top-3].size <= stack[top-2].size+stack[top-1].size)
+                writef("%3d ", stack[i].size);
+            writeln();*/
+            if(top>=3 && (stack[top-3].size <= stack[top-2].size+stack[top-1].size))
             {
-                if(stack[top-3].size<stack[top-1].size)
+                if(stack[top-3].size<=stack[top-1].size)
                 {
                     merge(stack[top - 3],stack[top - 2]);
                     stack[top - 2] = stack[top - 1];
@@ -450,24 +449,24 @@ void sortByTimsort(Type)(List!Type list)
                     --top;
                 }
             }
-            else if(stack[top-2].size <= stack[top-1].size)
+            else if(top>=2 && (stack[top-2].size <= stack[top-1].size))
             {
                 merge(stack[top - 2],stack[top - 1]);
                 stack[top - 1] = null;
                 --top;
             }
         }
-        writeln("top = ", top);
+        /*writeln("top = ", top);
         writeln("stack:");
         for(int i=0; i<top; ++i)
-            writef("%3d", stack[i].size);
-        writeln();
+            writef("%3d ", stack[i].size);
+        writeln();*/
     }
-    writeln("top = ", top);
+    /*writeln("top = ", top);
     writeln("stack:");
     for(int i=0; i<top; ++i)
-        writef("%3d", stack[i].size);
-    writeln();
+        writef("%3d ", stack[i].size);
+    writeln();*/
     while(top >= 2)
     {
         merge(stack[top - 2],stack[top - 1]);
@@ -505,7 +504,7 @@ private void beisen(Type)(List!Type run, Node!Type* q, uint size, List!Type list
     }
 }
 
-private void reverse(Type)(List!Type list) nothrow
+private void reverse(Type)(List!Type list)
 {
     if(!list.isEmpty)
     {
