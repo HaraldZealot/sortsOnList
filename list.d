@@ -1,14 +1,19 @@
-import std.stdio,std.format,std.conv;
+import std.format,std.conv;
+import std.stdio;
 
-private File fdebug;
-static this()
+debug
 {
-    fdebug.open("debug.txt","w");
-}
 
-static ~this()
-{
-    fdebug.close();
+    private File fdebug;
+    static this()
+    {
+        fdebug.open("debug.txt","w");
+    }
+
+    static ~this()
+    {
+        fdebug.close();
+    }
 }
 
 class ListException: Exception
@@ -234,7 +239,14 @@ class List(Type)
             //while(p!=end)
             for(auto i=0; i<size; ++i)
             {
-                f.writeln(p.datum.toString());
+static if ( is(Type T: int))
+                {
+
+                }
+                else
+                {
+                    f.writeln(p.datum.toString());
+                }
                 p=p.right;
             }
             /* p=end;
@@ -306,6 +318,8 @@ class List(Type)
                     p.right = qRight;
                     q.right = p;
                     p.left = q;
+                    pLeft.right=q;
+                    qRight.left=p;
 
                 }
 
@@ -365,6 +379,89 @@ void sortByInsertion(Type)(List!Type list)
         prebeg=null;
         postend=null;
     }
+}
+
+unittest
+{
+    List!int list= new List!int;
+    list.pushBack(1);
+    list.pushBack(2);
+    list.pushBack(3);
+    list.pushBack(4);
+    auto size = list.size;
+
+    assert(size==4);
+    assert(list.beg.datum==1);
+    assert(list.beg.right.datum==2);
+    assert(list.beg.right.right.datum==3);
+    assert(list.beg.right.right.right.datum==4);
+    assert(list.beg.right.right.right.right is null);
+    assert(list.end.datum==4);
+    assert(list.end.left.datum==3);
+    assert(list.end.left.left.datum==2);
+    assert(list.end.left.left.left.datum==1);
+    assert(list.end.left.left.left.left is null);
+
+
+    list.swap(1,2);
+
+    string msg;
+    assert(size==4);
+    assert(list.beg.left is null);
+    assert(list.beg.right !is null);
+    assert(list.end.left !is null);
+    assert(list.end.right is null);
+    assert(list.beg.right.right.right==list.end);
+    assert(list.end.left.left.left==list.beg);
+    assert(list.beg.datum==1);
+    assert(list.beg.right.datum==3);
+    assert(list.beg.right.right.datum==2);
+    assert(list.beg.right.right.right.datum==4);
+    assert(list.beg.right.right.right.right is null);
+    assert(list.end.datum==4);
+    assert(list.end.left.datum==2);
+    assert(list.end.left.left.datum==3);
+    assert(list.end.left.left.left.datum==1);
+    assert(list.end.left.left.left.left is null);
+
+    list.swap(0,2);
+
+    assert(size==4);
+    assert(list.beg.left is null);
+    assert(list.beg.right !is null);
+    assert(list.end.left !is null);
+    assert(list.end.right is null);
+    assert(list.beg.right.right.right==list.end);
+    assert(list.end.left.left.left==list.beg);
+    assert(list.beg.datum==2);
+    assert(list.beg.right.datum==3);
+    assert(list.beg.right.right.datum==1);
+    assert(list.beg.right.right.right.datum==4);
+    assert(list.beg.right.right.right.right is null);
+    assert(list.end.datum==4);
+    assert(list.end.left.datum==1);
+    assert(list.end.left.left.datum==3);
+    assert(list.end.left.left.left.datum==2);
+    assert(list.end.left.left.left.left is null);
+
+    list.swap(2,3);
+    assert(size==4);
+    assert(list.beg.left is null);
+    assert(list.beg.right !is null);
+    assert(list.end.left !is null);
+    assert(list.end.right is null);
+    assert(list.beg.right.right.right==list.end);
+    assert(list.end.left.left.left==list.beg);
+    assert(list.beg.datum==2);
+    assert(list.beg.right.datum==3);
+    assert(list.beg.right.right.datum==4);
+    assert(list.beg.right.right.right.datum==1);
+    assert(list.beg.right.right.right.right is null);
+    assert(list.end.datum==1);
+    assert(list.end.left.datum==4);
+    assert(list.end.left.left.datum==3);
+    assert(list.end.left.left.left.datum==2);
+    assert(list.end.left.left.left.left is null);
 }
 
 void sortByMerge(Type)(List!Type list)
@@ -488,7 +585,7 @@ void sortByTimsort(Type)(List!Type list)
     }
 
     uint minrun = lengthMinrun(list.size);
-    fdebug.writeln("minrun = ", minrun);
+    debug fdebug.writeln("minrun = ", minrun);
     List!Type[] stack=new List!Type[list.size/minrun+1];
     int top = 0;
 
@@ -548,8 +645,8 @@ void sortByTimsort(Type)(List!Type list)
 
 
         stack[top++]=run;
-        fdebug.writeln("top = ",top);
-        fdebug.writefln("run =%d",run.size);
+        debug fdebug.writeln("top = ",top);
+        debug fdebug.writefln("run =%d",run.size);
         run = null;
 
         // merging
@@ -561,11 +658,14 @@ void sortByTimsort(Type)(List!Type list)
         while((top>=3 && (stack[top-3].size <= stack[top-2].size+stack[top-1].size))
                 || (top>=2 && (stack[top-2].size <= stack[top-1].size)))
         {
-            fdebug.writeln("top = ", top);
-            fdebug.writeln("stack:");
-            for(int i=0; i<top; ++i)
-                fdebug.writef("%5d ", stack[i].size);
-            fdebug.writeln();
+            debug
+            {
+                fdebug.writeln("top = ", top);
+                fdebug.writeln("stack:");
+                for(int i=0; i<top; ++i)
+                    fdebug.writef("%5d ", stack[i].size);
+                fdebug.writeln();
+            }
             if(top>=3 && (stack[top-3].size <= stack[top-2].size+stack[top-1].size))
             {
                 if(stack[top-3].size<=stack[top-1].size)
@@ -589,22 +689,29 @@ void sortByTimsort(Type)(List!Type list)
                 --top;
             }
         }
-        fdebug.writeln("top = ", top);
-        fdebug.writeln("stack:");
-        for(int i=0; i<top; ++i)
-            fdebug.writef("%3d ", stack[i].size);
-        fdebug.writeln();
+        debug
+        {
+            fdebug.writeln("top = ", top);
+            fdebug.writeln("stack:");
+            for(int i=0; i<top; ++i)
+                fdebug.writef("%5d ", stack[i].size);
+            fdebug.writeln();
+        }
     }
-    fdebug.writeln("top = ", top);
-    fdebug.writeln("stack:");
-    for(int i=0; i<top; ++i)
-        fdebug.writef("%3d ", stack[i].size);
-    fdebug.writeln();
+
     while(top >= 2)
     {
         merge(stack[top - 2],stack[top - 1]);
         stack[top - 1] = null;
         --top;
+        debug
+        {
+            fdebug.writeln("top = ", top);
+            fdebug.writeln("stack:");
+            for(int i=0; i<top; ++i)
+                fdebug.writef("%5d ", stack[i].size);
+            fdebug.writeln();
+        }
     }
 
     list.beg = stack[top - 1].beg;

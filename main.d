@@ -1,15 +1,15 @@
 module main;
 
-import list, std.stdio, std.random, std.datetime, std.format,std.conv;
+import list, std.stdio, std.random, std.datetime, std.format,std.conv,std.string;
 
 int main(string[] args)
 {
     Random generator;
     string[] filesNames = new string[1];
-    filesNames[0] = "unsorted.txt";
-    ++filesNames.length;
+    filesNames[$-1] = "unsorted.txt";
+    //++filesNames.length;
     auto fout = File(filesNames[0],"w");
-    auto immutable size =2_000;
+    auto immutable size =32_000;
     for(auto i=0; i<size; ++i)
     {
         int n = generator.front%100_000;
@@ -26,35 +26,22 @@ int main(string[] args)
 
 
         sortByMerge(list);
-        filesNames[1] = "sorted.txt";
-        list.print(filesNames[1]);
+        string sorted = "sorted.txt";
+        list.print(sorted);
 
 
-        int[] cases=[10,100,1000,20_000];
+        int[] cases=[20_000,10_000,5_000,4_000,3_000,2_000,1_000,500,400,300,200,100,60,40,20,10,9,8,7,6,5,4,3,2,1,0];
         foreach(c; cases)
         {
-            writeln("size", list.size);
-            writeln("ref list "~to!string(list));
-            writeln("is ref null "~to!string(list is null));
-            list.verify();
             shuffle(list,c,size);
-            writeln("after shuffle");
-            //writeln("size", list.size);
             ++filesNames.length;
-            filesNames[filesNames.length-1] =  format("shuffled_%d.txt",c);
-
-            //list.print(filesNames[filesNames.length-1]);
-
-            writeln("before clear");
+            filesNames[$-1] =  format("shuffled_%d.txt",c);
+            list.print(filesNames[$-1]);
             list.clear();
-            writeln("after clear");
-            //list = new List!Pair;
-
-            writeln("before load");
-            loadList(list,"sorted.txt",size);
-            writeln("after load");
+            loadList(list,sorted,size);
         }
-
+        ++filesNames.length;
+        filesNames[$-1] = sorted;
     }
 
 
@@ -71,22 +58,30 @@ int main(string[] args)
       test(SortType.Quick,"quick");
       test(SortType.Timsort,"timsort");*/
 
-    SortType[] sortType=[SortType.Insertion, SortType.Merge, SortType.Quick, SortType.Timsort];
+    SortType[] sortType=[/+SortType.Insertion,+/ SortType.Merge, SortType.Quick, SortType.Timsort];
+    string[] logsNames=["ins.log","mrg.log","qck.log","tim.log"];
 
+    //auto log=File("all.log");
     foreach(e; sortType)
     {
+        File log;
+        log.open(logsNames[e],"w");
+        assert(log.isOpen);
         foreach(f; filesNames)
         {
-            test(e,f,size);
+            test(e,f,size,&log);
         }
+        log.close();
+        writeln();
     }
+    //log.close();
 
     return 0;
 }
 
 enum SortType {Insertion, Merge, Quick, Timsort}
-//void function(Type)(List!Type) Srtf;
-void test(SortType sortType, string fileName,int size)
+
+void test(SortType sortType, string fileName,int size,File* log=null)
 {
     auto list=new List!Pair;
     loadList(list,fileName,size);
@@ -125,8 +120,10 @@ void test(SortType sortType, string fileName,int size)
     }
 
     auto duration = toc - tic;
-    writeln(fileName ~ " " ~ name);
+    writeln(name ~ "\t\t" ~ fileName);
     writeln(duration.usecs/1000_000,"  sec ",(duration.usecs%1000_000)/1000," msec ",duration.usecs%1000," usec");
+    if(log && indexOf(fileName,"shuffled")!=-1)
+        log.writefln("%6d %6d",to!int(removechars(fileName,"^0-9")),duration.usecs);
 }
 
 struct Pair
@@ -157,7 +154,7 @@ void shuffle(Type)(List!Type list, int amount, int size)
         generator.popFront();
         int n = generator.front%size;
         generator.popFront();
-        //list.swap(m,n);
+        list.swap(m,n);
     }
 }
 
